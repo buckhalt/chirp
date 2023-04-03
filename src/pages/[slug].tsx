@@ -1,14 +1,16 @@
-import { type NextPage } from "next";
+import type { GetStaticProps, NextPage } from "next";
 import Head from "next/head";
 import { api } from "~/utils/api";
+import { createProxySSGHelpers } from '@trpc/react-query/ssg';
+import { appRouter } from "~/server/api/root";
+import { prisma } from "~/server/db";
+import superjson from "superjson";
 
 
-
-
-const ProfilePage: NextPage = () => {
+const ProfilePage: NextPage<{ username: string }> = ({ username }) => {
 
   const { data, isLoading } = api.profile.getUserByUsername.useQuery({
-    username: "buckhalt"
+    username,
   });
 
   if (isLoading) return <div>Loading...</div>
@@ -20,7 +22,7 @@ const ProfilePage: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Profile</title>
+        <title>{`@${username}`}</title>
       </Head>
       <main className="flex h-screen justify-center">
         <div>
@@ -29,6 +31,35 @@ const ProfilePage: NextPage = () => {
       </main>
     </>
   );
+};
+
+
+
+export const getStaticProps: GetStaticProps = async (context) => {
+  const ssg = createProxySSGHelpers({
+    router: appRouter,
+    ctx: { prisma, userId: null },
+    transformer: superjson, // optional - adds superjson serialization
+  });
+
+  const slug = context.params?.slug;
+
+  if (typeof slug !== "string") throw new Error("no slug");
+
+  const username = slug.replace("@", ""); 
+
+  await ssg.profile.getUserByUsername.prefetch({ username: username });
+
+  return {
+    props: {
+      trpcState: ssg.dehydrate(),
+      username, 
+    },
+  };
+};
+
+export const getStaticPaths = () => {
+  return {paths: [], fallback: "blocking"}
 };
 
 export default ProfilePage;

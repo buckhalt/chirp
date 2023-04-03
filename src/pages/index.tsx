@@ -135,7 +135,6 @@ const Home: NextPage = () => {
   if (!userLoaded) return <div />;
 
   return (
-    <>
       <main className="flex h-screen justify-center">
         <div className="w-full border-x border-slate-400 md:max-w-2xl">
           <div className="flex border-b border-slate-400 p-4">
@@ -149,7 +148,6 @@ const Home: NextPage = () => {
           <Feed />
         </div>
       </main>
-    </>
   );
 };
 
